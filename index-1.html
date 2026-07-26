@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Registro de Treino</title>
+
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="theme-color" content="#14161a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Treino">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #14161a;
+    --surface: #1d2126;
+    --surface-2: #262b31;
+    --border: #323840;
+    --ink: #ece8e0;
+    --ink-dim: #8d939c;
+    --accent: #d9a62e;
+    --accent-ink: #171a1e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  #app { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+
+  .header {
+    padding: 18px 20px 14px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+  }
+  .header h1 {
+    font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 15px;
+    letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 2px;
+  }
+  .header p { font-size: 12px; color: var(--ink-dim); }
+  .mode-btn {
+    font-family: 'Oswald', sans-serif; font-size: 10.5px; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--ink-dim); background: transparent;
+    border: 1px solid var(--border); padding: 7px 10px; border-radius: 8px;
+    cursor: pointer; white-space: nowrap; transition: border-color .15s, color .15s;
+  }
+  .mode-btn.on { border-color: var(--accent); color: var(--accent); }
+
+  .tabs {
+    display: flex; justify-content: center; gap: 22px; padding: 18px 12px;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 5;
+  }
+  .plate {
+    width: 52px; height: 52px; border-radius: 50%; border: 3px solid var(--border);
+    background: radial-gradient(circle at 50% 42%, var(--surface-2) 0%, #15181c 78%);
+    color: var(--ink-dim); font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 17px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;
+    transition: border-color .15s, color .15s, transform .1s;
+  }
+  .plate::after {
+    content: ''; position: absolute; width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid var(--border); transition: border-color .15s;
+  }
+  .plate.active { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+  .plate.active::after { border-color: var(--accent); }
+  .plate:active { transform: scale(0.94); }
+
+  .body { padding: 6px 16px 4px; flex: 1; overflow-y: auto; }
+
+  .group-label {
+    font-family: 'Oswald', sans-serif; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-dim); margin: 18px 4px 8px;
+  }
+  .group-label:first-child { margin-top: 12px; }
+
+  .exercise {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; margin-bottom: 8px; transition: border-color .25s;
+  }
+  .exercise.flash { border-color: var(--accent); }
+
+  .ex-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .ex-name { font-size: 14px; font-weight: 500; line-height: 1.3; }
+  .ex-obs {
+    display: block; font-size: 11px; color: var(--accent); margin-top: 2px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .ex-target { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; color: var(--ink-dim); white-space: nowrap; }
+
+  .ex-bottom { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  .field {
+    display: flex; align-items: center; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 10px; flex: 1; min-width: 0;
+  }
+  .field input {
+    border: none; outline: none; background: transparent; font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px; color: var(--ink); width: 100%; min-width: 0;
+  }
+  .field input::placeholder { color: var(--ink-dim); }
+  .field span { font-size: 10.5px; color: var(--ink-dim); font-family: 'IBM Plex Mono', monospace; white-space: nowrap; margin-left: 4px; }
+  .field.mini { flex: 0 0 62px; }
+
+  .check-btn, .remove-btn {
+    width: 34px; height: 34px; min-width: 34px; border-radius: 50%; border: 2px solid var(--border);
+    background: transparent; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 15px; transition: background .15s, border-color .15s, color .15s;
+  }
+  .check-btn { color: transparent; }
+  .check-btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .remove-btn { color: var(--ink-dim); }
+  .remove-btn:active { border-color: var(--accent); color: var(--accent); }
+
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 4px 16px; }
+  .chip {
+    font-size: 12px; color: var(--ink-dim); background: var(--surface);
+    border: 1px dashed var(--border); border-radius: 20px; padding: 6px 12px;
+    cursor: pointer; transition: border-color .15s, color .15s;
+  }
+  .chip:active { border-color: var(--accent); color: var(--accent); }
+
+  .footer {
+    padding: 14px 16px calc(18px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border);
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  }
+  .footer small { flex: 1 1 100%; font-size: 10.5px; color: var(--ink-dim); line-height: 1.4; margin-bottom: 4px; }
+  .btn {
+    font-family: 'Oswald', sans-serif; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-dim); background: transparent; border: 1px solid var(--border); padding: 8px 12px;
+    border-radius: 8px; cursor: pointer; white-space: nowrap; transition: border-color .15s, color .15s;
+  }
+  .btn:active { border-color: var(--accent); color: var(--accent); }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div>
+      <h1>Registro de Treino</h1>
+      <p id="headerHint">Peso e repetições salvam sozinhos neste aparelho.</p>
+    </div>
+    <button class="mode-btn" id="modeBtn">Editar treino</button>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="body" id="exList"></div>
+  <div class="footer">
+    <small>Dados guardados localmente no navegador. Use Exportar para fazer backup ou levar a outro aparelho.</small>
+    <button class="btn" id="resetBtn">Resetar dia</button>
+    <button class="btn" id="exportBtn">Exportar</button>
+    <button class="btn" id="importBtn">Importar</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ============================================================
+     CATÁLOGO
+     Todas as opções de exercício da ficha original, agrupadas
+     por região muscular — inclui tanto os marcados (A/B/C) na
+     ficha quanto as alternativas que estavam em branco. `obs`
+     reproduz a observação da ficha quando existente; `unit`
+     marca exercícios cronometrados (só a Prancha, no momento).
+     ============================================================ */
+  const GROUPS = {
+    'Peito': [
+      { id: 'peito-supino-reto', name: 'Supino Reto' },
+      { id: 'peito-supino-inclinado', name: 'Supino Inclinado', obs: 'Articulado' },
+      { id: 'peito-supino-maquina', name: 'Supino Máquina' },
+      { id: 'peito-voador', name: 'Voador' },
+      { id: 'peito-cross-over', name: 'Cross-Over' },
+      { id: 'peito-supino-declinado', name: 'Supino Declinado' },
+      { id: 'peito-pullover', name: 'Pullover' },
+      { id: 'peito-apoio', name: 'Apoio' },
+      { id: 'peito-crucifixo-inclinado', name: 'Crucifixo Inclinado' },
+      { id: 'peito-crucifixo-reto', name: 'Crucifixo Reto' },
+    ],
+    'Costas': [
+      { id: 'costas-remada-baixa', name: 'Remada Baixa' },
+      { id: 'costas-remada-cavalo', name: 'Remada Cavalo' },
+      { id: 'costas-puxada-atras', name: 'Puxada Atrás' },
+      { id: 'costas-puxada-frente', name: 'Puxada Frente' },
+      { id: 'costas-serrote', name: 'Serrote' },
+      { id: 'costas-pull-down', name: 'Pull Down' },
+      { id: 'costas-remada-curvada', name: 'Remada Curvada' },
+      { id: 'costas-puxada-graviton', name: 'Puxada Graviton' },
+    ],
+    'Ombro': [
+      { id: 'ombro-elevacao-lateral', name: 'Elevação Lateral' },
+      { id: 'ombro-elevacao-frontal', name: 'Elevação Frontal' },
+      { id: 'ombro-desenvolvimento-barra', name: 'Desenvolvimento Barra' },
+      { id: 'ombro-desenvolvimento-maquina', name: 'Desenvolvimento Máquina' },
+      { id: 'ombro-desenvolvimento-halter', name: 'Desenvolvimento Halter' },
+      { id: 'ombro-crucifixo-inverso', name: 'Crucifixo Inverso' },
+      { id: 'ombro-voador-inverso', name: 'Voador Inverso' },
+    ],
+    'Bíceps': [
+      { id: 'biceps-rosca-cross', name: 'Rosca Cross' },
+      { id: 'biceps-rosca-direta', name: 'Rosca Direta' },
+      { id: 'biceps-rosca-scott', name: 'Rosca Scott' },
+      { id: 'biceps-rosca-alternada', name: 'Rosca Alternada' },
+      { id: 'biceps-rosca-martelo', name: 'Rosca Martelo' },
+      { id: 'biceps-rosca-concentrada', name: 'Rosca Concentrada' },
+      { id: 'biceps-rosca-inversa', name: 'Rosca Inversa' },
+    ],
+    'Coxa / Perna': [
+      { id: 'perna-flexor-sentado', name: 'Flexor Sentado' },
+      { id: 'perna-graviton', name: 'Graviton' },
+      { id: 'perna-leg-press-horizontal', name: 'Leg Press Horizontal' },
+      { id: 'perna-leg-press-45', name: 'Leg Press 45°' },
+      { id: 'perna-leg-press-alto', name: 'Leg Press Alto' },
+      { id: 'perna-hack-machine', name: 'Hack Machine' },
+      { id: 'perna-extensor', name: 'Extensor' },
+      { id: 'perna-aducao', name: 'Adução', obs: 'Força' },
+      { id: 'perna-multi-forca', name: 'Multi Força' },
+      { id: 'perna-agachamento-livre', name: 'Agachamento Livre' },
+      { id: 'perna-panturrilha-sentado', name: 'Panturrilha (Sentado)' },
+      { id: 'perna-panturrilha-em-pe', name: 'Panturrilha (Em Pé)' },
+      { id: 'perna-sumo', name: 'Sumô' },
+      { id: 'perna-bulgaro', name: 'Búlgaro' },
+      { id: 'perna-flexor-deitado', name: 'Flexor Deitado' },
+    ],
+    'Glúteo': [
+      { id: 'gluteo-em-pe', name: 'Glúteo em Pé' },
+      { id: 'gluteo-maquina-4-apoio', name: 'Glúteo Máquina 4 Apoio' },
+      { id: 'gluteo-abducao', name: 'Abdução', obs: 'Força' },
+      { id: 'gluteo-afundo', name: 'Afundo' },
+      { id: 'gluteo-stiff', name: 'Stiff' },
+      { id: 'gluteo-passada', name: 'Passada' },
+      { id: 'gluteo-avanco', name: 'Avanço' },
+      { id: 'gluteo-elevacao-pelvica', name: 'Elevação Pélvica' },
+    ],
+    'Tríceps': [
+      { id: 'triceps-testa', name: 'Tríceps Testa' },
+      { id: 'triceps-supinado', name: 'Tríceps Supinado' },
+      { id: 'triceps-roldana', name: 'Tríceps Roldana' },
+      { id: 'triceps-frances', name: 'Tríceps Francês' },
+      { id: 'triceps-corda', name: 'Tríceps Corda' },
+      { id: 'triceps-banco', name: 'Tríceps Banco' },
+      { id: 'triceps-coice', name: 'Tríceps Coice' },
+    ],
+    'Trapézio': [
+      { id: 'trapezio-enco-halteres', name: 'Enco. Ombros Halteres' },
+      { id: 'trapezio-enco-barra', name: 'Enco. Ombros com Barra' },
+      { id: 'trapezio-remada-alta', name: 'Remada Alta', obs: 'Cross' },
+    ],
+    'Abdômen': [
+      { id: 'abdomen-paralela', name: 'Paralela' },
+      { id: 'abdomen-infra-maquina', name: 'Infra Máquina' },
+      { id: 'abdomen-supra-maquina', name: 'Supra Máquina' },
+      { id: 'abdomen-lombar', name: 'Lombar' },
+      { id: 'abdomen-prancha', name: 'Prancha', unit: 'seg' },
+      { id: 'abdomen-obliquo', name: 'Oblíquo' },
+    ],
+  };
+
+  // Quais grupos aparecem em cada aba de treino (replica a divisão Push/Legs/Pull).
+  const TREINO_GROUPS = {
+    A: ['Peito', 'Ombro', 'Tríceps', 'Abdômen'],
+    B: ['Coxa / Perna', 'Glúteo'],
+    C: ['Costas', 'Ombro', 'Bíceps', 'Trapézio', 'Abdômen'],
+  };
+
+  // Seleção e metas (séries×repetições) originais da ficha, usadas para
+  // popular o estado na primeira execução do app.
+  const DEFAULT_INCLUDED = {
+    A: {
+      'peito-supino-inclinado': { series: 4, reps: 15 },
+      'peito-supino-maquina': { series: 4, reps: 10 },
+      'peito-crucifixo-inclinado': { series: 4, reps: 10 },
+      'ombro-desenvolvimento-maquina': { series: 4, reps: 10 },
+      'triceps-roldana': { series: 4, reps: 12 },
+      'triceps-banco': { series: 4, reps: 15 },
+      'abdomen-supra-maquina': { series: 4, reps: 20 },
+    },
+    B: {
+      'perna-flexor-sentado': { series: 4, reps: 20 },
+      'perna-leg-press-45': { series: 4, reps: 10 },
+      'perna-extensor': { series: 4, reps: 20 },
+      'perna-aducao': { series: 4, reps: 12 },
+      'perna-panturrilha-sentado': { series: 4, reps: 15 },
+      'gluteo-abducao': { series: 4, reps: 12 },
+    },
+    C: {
+      'costas-remada-cavalo': { series: 4, reps: 12 },
+      'costas-puxada-frente': { series: 4, reps: 10 },
+      'costas-serrote': { series: 4, reps: 15 },
+      'ombro-elevacao-frontal': { series: 4, reps: 10 },
+      'ombro-voador-inverso': { series: 4, reps: 15 },
+      'biceps-rosca-alternada': { series: 4, reps: 12 },
+      'biceps-rosca-martelo': { series: 4, reps: 12 },
+      'trapezio-remada-alta': { series: 4, reps: 10 },
+      'abdomen-prancha': { series: 4, reps: 20 },
+    },
+  };
+
+  // Índice reverso id -> {group, item} para achar dados de catálogo sem varrer tudo.
+  const CATALOG_INDEX = {};
+  Object.keys(GROUPS).forEach(function (groupName) {
+    GROUPS[groupName].forEach(function (item) {
+      CATALOG_INDEX[item.id] = { group: groupName, item: item };
+    });
+  });
+
+  /* ============================================================
+     PERSISTÊNCIA (v2 — estrutura aninhada por treino)
+     state = {
+       A: { "<id>": { included, series, reps, peso, repsDone, done } },
+       B: { ... }, C: { ... }
+     }
+     Uma leitura no carregamento, uma escrita por alteração.
+     ============================================================ */
+  const STORAGE_KEY = 'treino:v2';
+  const LEGACY_KEY = 'treino:v1';
+
+  function blankState() { return { A: {}, B: {}, C: {} }; }
+
+  function seedDefaults(target) {
+    Object.keys(DEFAULT_INCLUDED).forEach(function (treino) {
+      Object.keys(DEFAULT_INCLUDED[treino]).forEach(function (id) {
+        if (!target[treino][id]) {
+          const d = DEFAULT_INCLUDED[treino][id];
+          target[treino][id] = { included: true, series: d.series, reps: d.reps, peso: '', repsDone: '', done: false };
+        }
+      });
+    });
+  }
+
+  /* Migração best-effort do formato antigo (v1: chave plana por id,
+     sem noção de treino). Para cada id migrável, localizamos a que
+     treino ele pertencia por padrão e recriamos a entrada em v2,
+     preservando peso/reps/marcação já registrados pelo usuário. */
+  function migrateLegacy() {
+    let legacyRaw;
+    try { legacyRaw = localStorage.getItem(LEGACY_KEY); } catch (e) { return null; }
+    if (!legacyRaw) return null;
+    let legacy;
+    try { legacy = JSON.parse(legacyRaw); } catch (e) { return null; }
+
+    const migrated = blankState();
+    seedDefaults(migrated);
+    Object.keys(legacy).forEach(function (id) {
+      Object.keys(DEFAULT_INCLUDED).forEach(function (treino) {
+        if (DEFAULT_INCLUDED[treino][id] && migrated[treino][id]) {
+          const old = legacy[id] || {};
+          if (old.peso != null) migrated[treino][id].peso = old.peso;
+          if (old.reps != null) migrated[treino][id].repsDone = old.reps;
+          if (old.done) migrated[treino][id].done = true;
+        }
+      });
+    });
+    return migrated;
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        seedDefaults(parsed); // garante grupos padrão mesmo se algo faltar
+        return parsed;
+      }
+    } catch (e) {
+      console.error('Falha ao ler estado v2; tentando migração.', e);
+    }
+    const migrated = migrateLegacy();
+    if (migrated) return migrated;
+    const fresh = blankState();
+    seedDefaults(fresh);
+    return fresh;
+  }
+
+  function saveState() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    catch (e) { console.error('Falha ao salvar estado.', e); }
+  }
+
+  function entry(treino, id) {
+    if (!state[treino][id]) {
+      const catalogItem = CATALOG_INDEX[id] && CATALOG_INDEX[id].item;
+      const isTime = catalogItem && catalogItem.unit === 'seg';
+      state[treino][id] = { included: false, series: 4, reps: isTime ? 20 : 12, peso: '', repsDone: '', done: false };
+    }
+    return state[treino][id];
+  }
+
+  let state = loadState();
+  let currentTab = 'A';
+  let editMode = false;
+
+  const tabsEl = document.getElementById('tabs');
+  const listEl = document.getElementById('exList');
+  const modeBtn = document.getElementById('modeBtn');
+  const headerHint = document.getElementById('headerHint');
+
+  function renderTabs() {
+    tabsEl.innerHTML = Object.keys(TREINO_GROUPS).map(function (key) {
+      return '<div class="plate' + (key === currentTab ? ' active' : '') + '" data-tab="' + key + '">' + key + '</div>';
+    }).join('');
+  }
+
+  /* ------------------------------------------------------------
+     renderTracker: modo padrão de uso — mostra só os exercícios
+     incluídos no treino atual, com campos de peso/reps feitos.
+     ------------------------------------------------------------ */
+  function renderTracker() {
+    const groupNames = TREINO_GROUPS[currentTab];
+    let html = '';
+    groupNames.forEach(function (groupName) {
+      const included = GROUPS[groupName].filter(function (it) {
+        return state[currentTab][it.id] && state[currentTab][it.id].included;
+      });
+      if (included.length === 0) return;
+      html += '<div class="group-label">' + groupName + '</div>';
+      included.forEach(function (item) {
+        const e = entry(currentTab, item.id);
+        const isTime = item.unit === 'seg';
+        const obsHtml = item.obs ? '<span class="ex-obs">' + item.obs + '</span>' : '';
+        const target = e.series + '×' + e.reps + (isTime ? '"' : '');
+        const pesoField = isTime ? '' :
+          '<div class="field"><input type="number" inputmode="decimal" min="0" step="0.5" placeholder="peso" value="' +
+          (e.peso || '') + '" data-id="' + item.id + '" data-field="peso"><span>kg</span></div>';
+        const repsField =
+          '<div class="field"><input type="number" inputmode="numeric" min="0" step="1" placeholder="' + e.reps + '" value="' +
+          (e.repsDone || '') + '" data-id="' + item.id + '" data-field="repsDone"><span>' + (isTime ? 'seg' : 'reps') + '</span></div>';
+        html +=
+          '<div class="exercise" data-row="' + item.id + '">' +
+            '<div class="ex-top"><div class="ex-name">' + item.name + obsHtml + '</div><div class="ex-target">' + target + '</div></div>' +
+            '<div class="ex-bottom">' + pesoField + repsField +
+              '<button class="check-btn" data-id="' + item.id + '" aria-pressed="' + (e.done ? 'true' : 'false') + '">&#10003;</button>' +
+            '</div>' +
+          '</div>';
+      });
+    });
+    if (!html) html = '<p style="color:var(--ink-dim);font-size:13px;padding:20px 4px;">Nenhum exercício incluído neste treino ainda. Toque em "Editar treino" para adicionar.</p>';
+    listEl.innerHTML = html;
+  }
+
+  /* ------------------------------------------------------------
+     renderEditor: modo de edição — mostra os exercícios já
+     incluídos (com séries/reps-alvo editáveis e botão de
+     remover) e, abaixo, chips para adicionar qualquer outra
+     opção do catálogo daquele grupo muscular.
+     ------------------------------------------------------------ */
+  function renderEditor() {
+    const groupNames = TREINO_GROUPS[currentTab];
+    let html = '';
+    groupNames.forEach(function (groupName) {
+      const all = GROUPS[groupName];
+      const included = all.filter(function (it) { return state[currentTab][it.id] && state[currentTab][it.id].included; });
+      const available = all.filter(function (it) { return !(state[currentTab][it.id] && state[currentTab][it.id].included); });
+
+      html += '<div class="group-label">' + groupName + '</div>';
+
+      included.forEach(function (item) {
+        const e = entry(currentTab, item.id);
+        const isTime = item.unit === 'seg';
+        const obsHtml = item.obs ? '<span class="ex-obs">' + item.obs + '</span>' : '';
+        html +=
+          '<div class="exercise" data-row="' + item.id + '">' +
+            '<div class="ex-top"><div class="ex-name">' + item.name + obsHtml + '</div></div>' +
+            '<div class="ex-bottom">' +
+              '<div class="field mini"><input type="number" min="1" step="1" value="' + e.series + '" data-id="' + item.id + '" data-field="series"><span>séries</span></div>' +
+              '<div class="field mini"><input type="number" min="1" step="1" value="' + e.reps + '" data-id="' + item.id + '" data-field="reps"><span>' + (isTime ? 'seg' : 'reps') + '</span></div>' +
+              '<button class="remove-btn" data-remove="' + item.id + '" title="Remover">&times;</button>' +
+            '</div>' +
+          '</div>';
+      });
+
+      if (available.length) {
+        html += '<div class="chip-row">' + available.map(function (item) {
+          return '<button class="chip" data-add="' + item.id + '">+ ' + item.name + '</button>';
+        }).join('') + '</div>';
+      }
+    });
+    listEl.innerHTML = html;
+  }
+
+  function render() {
+    renderTabs();
+    if (editMode) renderEditor(); else renderTracker();
+  }
+
+  function flashRow(id) {
+    const row = listEl.querySelector('.exercise[data-row="' + id + '"]');
+    if (!row) return;
+    row.classList.add('flash');
+    setTimeout(function () { row.classList.remove('flash'); }, 350);
+  }
+
+  // Modo tracker: peso/reps feitos e marcação de concluído.
+  listEl.addEventListener('input', function (e) {
+    const el = e.target;
+    if (!el.dataset || !el.dataset.field || editMode) return;
+    entry(currentTab, el.dataset.id)[el.dataset.field] = el.value;
+    saveState();
+  });
+
+  // Modo editor: séries/reps-alvo.
+  listEl.addEventListener('change', function (e) {
+    const el = e.target;
+    if (!el.dataset || !el.dataset.field || !editMode) return;
+    const val = parseInt(el.value, 10);
+    entry(currentTab, el.dataset.id)[el.dataset.field] = isNaN(val) ? el.value : val;
+    saveState();
+  });
+
+  listEl.addEventListener('click', function (e) {
+    const checkBtn = e.target.closest('.check-btn');
+    if (checkBtn && !editMode) {
+      const id = checkBtn.dataset.id;
+      const nowDone = checkBtn.getAttribute('aria-pressed') !== 'true';
+      checkBtn.setAttribute('aria-pressed', String(nowDone));
+      entry(currentTab, id).done = nowDone;
+      saveState();
+      flashRow(id);
+      return;
+    }
+    const removeBtn = e.target.closest('.remove-btn');
+    if (removeBtn) {
+      entry(currentTab, removeBtn.dataset.remove).included = false;
+      saveState();
+      renderEditor();
+      return;
+    }
+    const chip = e.target.closest('.chip');
+    if (chip) {
+      const id = chip.dataset.add;
+      const e2 = entry(currentTab, id);
+      e2.included = true;
+      saveState();
+      renderEditor();
+    }
+  });
+
+  tabsEl.addEventListener('click', function (e) {
+    const plate = e.target.closest('.plate');
+    if (!plate) return;
+    currentTab = plate.dataset.tab;
+    render();
+  });
+
+  modeBtn.addEventListener('click', function () {
+    editMode = !editMode;
+    modeBtn.classList.toggle('on', editMode);
+    modeBtn.textContent = editMode ? 'Ver treino' : 'Editar treino';
+    headerHint.textContent = editMode
+      ? 'Toque em "+" para adicionar, ajuste séries/reps ou remova exercícios.'
+      : 'Peso e repetições salvam sozinhos neste aparelho.';
+    render();
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', function () {
+    Object.keys(state[currentTab]).forEach(function (id) { state[currentTab][id].done = false; });
+    saveState();
+    render();
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', function () {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'treino-backup.json'; a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  document.getElementById('importBtn').addEventListener('click', function () {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = 'application/json';
+    input.addEventListener('change', function () {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function () {
+        try {
+          const parsed = JSON.parse(reader.result);
+          if (parsed && typeof parsed === 'object' && parsed.A && parsed.B && parsed.C) {
+            state = parsed;
+            seedDefaults(state);
+            saveState();
+            render();
+          } else {
+            console.error('Arquivo de importação não corresponde ao formato v2 esperado.');
+          }
+        } catch (err) { console.error('Arquivo de importação inválido.', err); }
+      };
+      reader.readAsText(file);
+    });
+    input.click();
+  });
+
+  saveState();
+  render();
+})();
+</script>
+</body>
+</html>
